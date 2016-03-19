@@ -11,3 +11,204 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
 fi
 
 # Customize to your needs...
+zstyle ':prezto:module:editor:info:completing' format ''
+
+# History
+export HISTIGNORE="&:ls:[bf]g:exit"
+export HISTSIZE=40000
+export HISTFILESIZE=1000000
+unsetopt correct_all
+unsetopt share_history  # between-terminal sharing - kinda annoying.
+setopt extended_history
+setopt histignorespace
+setopt interactivecomments
+
+# ZSH Options
+autoload zmv
+setopt extended_glob
+unset MAILCHECK
+
+# Remove dot from wordchars so that we can skip it.
+export WORDCHARS="*?_[]~&;\!#%^(){}<>"
+
+# The ultimate history mode
+up-line-or-search-prefix () {
+  local CURSOR_before_search=$CURSOR
+  zle up-line-or-search "$LBUFFER"
+  CURSOR=$CURSOR_before_search
+}
+zle -N up-line-or-search-prefix
+bindkey "^[OA" 'up-line-or-search-prefix'
+
+down-line-or-search-prefix () {
+  local CURSOR_before_search=$CURSOR
+  zle down-line-or-search "$LBUFFER"
+  CURSOR=$CURSOR_before_search
+}
+zle -N down-line-or-search-prefix
+bindkey "^[OB" 'down-line-or-search-prefix'
+
+# Add in brew autocompletions
+[[ -s /usr/local/share/zsh-completions ]] && fpath=(/usr/local/share/zsh-completions $fpath)
+compinit -u
+
+# Add in aws completions
+[[ -s /usr/local/bin/aws_zsh_completer.sh ]] && source /usr/local/bin/aws_zsh_completer.sh
+
+
+#   ___  ____
+#  / _ \/ ___|
+# | | | \___ \
+# | |_| |___) |
+#  \___/|____/
+#
+
+export EDITOR=emacs
+
+# Increase file-watchable number
+ulimit -n 4096
+
+function pfd() {
+  osascript 2>/dev/null <<EOF
+    tell application "Finder"
+      return POSIX path of (target of window 1 as alias)
+    end tell
+EOF
+}
+
+function pfs() {
+  osascript 2>/dev/null <<EOF
+    set output to ""
+    tell application "Finder" to set the_selection to selection
+    set item_count to count the_selection
+    repeat with item_index from 1 to count the_selection
+      if item_index is less than item_count then set the_delimiter to "\n"
+      if item_index is item_count then set the_delimiter to ""
+      set output to output & ((item item_index of the_selection as alias)'s POSIX path) & the_delimiter
+    end repeat
+EOF
+}
+
+function cdf() {
+  cd "$(pfd)"
+}
+
+function pushdf() {
+  pushd "$(pfd)"
+}
+
+function quick-look() {
+  (( $# > 0 )) && qlmanage -p $* &>/dev/null &
+}
+
+function man-preview() {
+  man -t "$@" | open -f -a Preview
+}
+
+function trash() {
+  local trash_dir="${HOME}/.Trash"
+  local temp_ifs=$IFS
+  IFS=$'\n'
+  for item in "$@"; do
+    if [[ -e "$item" ]]; then
+      item_name="$(basename $item)"
+      if [[ -e "${trash_dir}/${item_name}" ]]; then
+        mv -f "$item" "${trash_dir}/${item_name} $(date "+%H-%M-%S")"
+      else
+        mv -f "$item" "${trash_dir}/"
+      fi
+    fi
+  done
+  IFS=$temp_ifs
+}
+
+
+#     _    _ _
+#    / \  | (_) __ _ ___  ___  ___
+#   / _ \ | | |/ _` / __|/ _ \/ __|
+#  / ___ \| | | (_| \__ \  __/\__ \
+# /_/   \_\_|_|\__,_|___/\___||___/
+#
+
+# some more ls aliases
+
+alias lsa='ls -al'
+alias lsl='ls -1'
+alias lsh='ls -alh'
+
+alias D='cd ~/Downloads'
+alias c=cd
+
+# GIT Aliases
+
+alias g='git'
+compdef g=git
+
+alias gs="git status -s"
+compdef _git gs=git-status
+alias gsl="git status | less -R"
+compdef _git gsl=git-status
+
+alias gcm="g commit -m"
+compdef _git gcm=git-commit
+
+alias gd="git diff"
+compdef _git gd=git-diff
+alias gdc="git diff --cached"
+compdef _git gdc=git-diff
+
+alias gl="git log --stat"
+compdef _git gl=git-log
+
+
+# Git log full diff with no context
+alias gld0="gld -U0"
+compdef _git gld0=git-log
+
+# Git log patch with no context = diffs on one file only
+alias glp='git log --topo-order --stat --patch -U0 --pretty=format:${_git_log_medium_format} --follow'
+
+alias fetch="g fetch"
+alias rebase="g rebase"
+
+alias gfr="fetch origin && rebase origin/master"
+alias gap="g add -p"
+
+# Lifelogger aliases
+alias l=lifelogger
+alias q="lifelogger quickadd"
+
+# Utilities
+alias bc="bc -l"
+function calc {
+  [[ -n "$1" ]] && echo "$1" | bc
+}
+
+
+#  ____        _   _
+# |  _ \ _   _| |_| |__   ___  _ __
+# | |_) | | | | __| '_ \ / _ \| '_ \
+# |  __/| |_| | |_| | | | (_) | | | |
+# |_|    \__, |\__|_| |_|\___/|_| |_|
+#        |___/
+
+# Set python environment to IPython
+export PYTHONSTARTUP=~/.python_startup
+
+unalias py >/dev/null 2>&1 || true
+alias json_format="python -m json.tool"
+
+# For virtualenvs
+unfunction chpwd >/dev/null 2>&1 || true  # Is reset in a few lines - virtualenvwrapper does a few `cd`s
+[[ -s /usr/local/bin/virtualenvwrapper.sh ]] && source /usr/local/bin/virtualenvwrapper.sh
+
+pyclean () {
+    find . -type f -name "*.py[co]" -delete
+    find . -type d -name "__pycache__" -delete
+}
+
+# Ansible
+export ANSIBLE_COW_SELECTION=two-heads
+
+# MySQL
+export MYSQL_PS1="\u@\h [\c]> "
