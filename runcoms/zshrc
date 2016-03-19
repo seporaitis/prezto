@@ -170,6 +170,8 @@ alias glp='git log --topo-order --stat --patch -U0 --pretty=format:${_git_log_me
 
 alias fetch="g fetch"
 alias rebase="g rebase"
+alias pull="g pull"
+alias co="g checkout"
 
 alias gfr="fetch origin && rebase origin/master"
 alias gap="g add -p"
