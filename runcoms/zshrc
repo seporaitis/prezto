@@ -11,3 +11,46 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
 fi
 
 # Customize to your needs...
+zstyle ':prezto:module:editor:info:completing' format ''
+
+# History
+export HISTIGNORE="&:ls:[bf]g:exit"
+export HISTSIZE=40000
+export HISTFILESIZE=1000000
+unsetopt correct_all
+unsetopt share_history  # between-terminal sharing - kinda annoying.
+setopt extended_history
+setopt histignorespace
+setopt interactivecomments
+
+# ZSH Options
+autoload zmv
+setopt extended_glob
+unset MAILCHECK
+
+# Remove dot from wordchars so that we can skip it.
+export WORDCHARS="*?_[]~&;\!#%^(){}<>"
+
+# The ultimate history mode
+up-line-or-search-prefix () {
+  local CURSOR_before_search=$CURSOR
+  zle up-line-or-search "$LBUFFER"
+  CURSOR=$CURSOR_before_search
+}
+zle -N up-line-or-search-prefix
+bindkey "^[OA" 'up-line-or-search-prefix'
+
+down-line-or-search-prefix () {
+  local CURSOR_before_search=$CURSOR
+  zle down-line-or-search "$LBUFFER"
+  CURSOR=$CURSOR_before_search
+}
+zle -N down-line-or-search-prefix
+bindkey "^[OB" 'down-line-or-search-prefix'
+
+# Add in brew autocompletions
+[[ -s /usr/local/share/zsh-completions ]] && fpath=(/usr/local/share/zsh-completions $fpath)
+compinit -u
+
+# Add in aws completions
+[[ -s /usr/local/bin/aws_zsh_completer.sh ]] && source /usr/local/bin/aws_zsh_completer.sh
